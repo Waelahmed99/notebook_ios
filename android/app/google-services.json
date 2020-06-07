@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "990606499568",
+    "firebase_url": "https://inotebook-78ff3.firebaseio.com",
+    "project_id": "inotebook-78ff3",
+    "storage_bucket": "inotebook-78ff3.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:990606499568:android:c52e3baf4e2673ee47ac35",
+        "android_client_info": {
+          "package_name": "com.example.notebook_provider"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "990606499568-ucg6kta45k79rsc6lpt4p7sou9v9gkts.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyByM12z1cs5ZHuJY2N8o533KpmHx6Z9rwk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "990606499568-ucg6kta45k79rsc6lpt4p7sou9v9gkts.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
