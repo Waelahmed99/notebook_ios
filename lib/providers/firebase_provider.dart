@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -23,9 +24,7 @@ class FirebaseModel extends ChangeNotifier {
   String _selectedBookId;
 
   // Download state
-  bool isBestSellingDownloaded = false;
-  bool isMostRecentDownloaded = false;
-  bool isAllBooksDownloaded = false;
+  bool downloadedOnce = false;
 
   // Constructor for getting the id of the user.
   FirebaseModel(String userId) {
@@ -58,51 +57,80 @@ class FirebaseModel extends ChangeNotifier {
   /// [MoreLike]: Retrieve suggested books (Requires a [type])
   /// [MostRecent]: Retrieve the most viewed books.
   /// [MostSelling]: Retrieve the most selled books.
-  dynamic getBooks(ListMode mode, {String type = ''}) async {
-    QuerySnapshot snapshot;
-    switch (mode) {
-      case ListMode.All:
-        if (isAllBooksDownloaded) return;
-        snapshot = await _reference.getDocuments();
-        isAllBooksDownloaded = true;
-        break;
-      case ListMode.MoreLike:
-        snapshot = await _reference
-            .where(Values.BOOK_TYPE, isEqualTo: type)
-            .orderBy(Values.BOOK_SELL_COUNT, descending: true)
-            .limit(6)
-            .getDocuments();
-        break;
-      case ListMode.MostRecent:
-        if (isMostRecentDownloaded) return;
-        snapshot = await _reference
-            .orderBy(Values.BOOK_VIEW_COUNT, descending: true)
-            .limit(6)
-            .getDocuments();
-        isMostRecentDownloaded = true;
-        break;
-      case ListMode.MostSelling:
-        if (isBestSellingDownloaded) return;
-        snapshot = await _reference
-            .orderBy(Values.BOOK_SELL_COUNT, descending: true)
-            .limit(6)
-            .getDocuments();
-        isBestSellingDownloaded = true;
-        break;
-    }
-
-    addBooks(snapshot.documents);
-    notifyListeners();
+  void getBooks() async {
+    _setLoadingState(true);
+    addBooks((await _reference.getDocuments()).documents);
+    downloadedOnce = true;
+    _setLoadingState(false);
   }
 
   // Retrieve users' personal books.
   dynamic getPersonalBooks() {
-    return _firestore
-        .collection(Values.PERSONAL_BOOKS)
-        .document(userId)
-        .collection(Values.BOOKS)
-        .getDocuments()
-        .asStream();
+    Map<String, Book> personalBooks = {};
+    _books.forEach((String key, Book value) {
+      if (value.isReadBought || value.isListenBought)
+        personalBooks[key] = value;
+    });
+    return personalBooks;
+  }
+
+  // Retrieve similar books to selected book, depending on TYPE.
+  dynamic getSimilarBooks() {
+    Map<String, Book> similarBooks = {};
+    _books.forEach((String key, Book value) {
+      if (key != _selectedBookId && value.type == selectedBook.type)
+        similarBooks[key] = value;
+    });
+    return similarBooks;
+  }
+
+  // Retrieve the most viewed books.
+  Map<String, Book> getMostRecentBooks() {
+    var sortedKeys = _books.keys.toList(growable: false)
+      ..sort((k1, k2) => _books[k2].viewCount.compareTo(_books[k1].viewCount));
+    Map<String, Book> sortedMap =
+        Map.fromIterable(sortedKeys, key: (k) => k, value: (k) => _books[k]);
+    return sortedMap;
+  }
+
+  // Retrieve the most selled books.
+  Map<String, Book> getBestSellingBooks() {
+    var sortedKeys = _books.keys.toList(growable: false)
+      ..sort((k1, k2) => _books[k2].sellCount.compareTo(_books[k1].sellCount));
+    Map<String, Book> sortedMap =
+        Map.fromIterable(sortedKeys, key: (k) => k, value: (k) => _books[k]);
+    return sortedMap;
+  }
+
+  // Retrieve books givina  mode
+  /// [mode]: specifies whether the retrieved books are All or Recent or BestSelling.
+  Map<String, Book> getBooksByMode(ListMode mode) {
+    if (mode == ListMode.All)
+      return books;
+    else if (mode == ListMode.MoreLike)
+      return getSimilarBooks();
+    else if (mode == ListMode.MostRecent)
+      return getMostRecentBooks();
+    else if (mode == ListMode.MostSelling)
+      return getBestSellingBooks();
+    else if (mode == ListMode.Liked) return getLikedBooks();
+  }
+
+  Map<String, Book> getLikedBooks() {
+    Map<String, Book> likedBooks = {};
+    _books.forEach((String key, Book value) {
+      if (value.isFavorite) likedBooks[key] = value;
+    });
+    return likedBooks;
+  }
+
+  /// Retrieve books that match the givin [content]
+  Map<String, Book> getMatchedBooks(String content) {
+    Map<String, Book> matchedData = {};
+    _books.forEach((String key, Book value) {
+      if (value.title.contains(content)) matchedData[key] = value;
+    });
+    return matchedData;
   }
 
   // Toggle book's nominating (True|False)
@@ -227,7 +255,6 @@ class FirebaseModel extends ChangeNotifier {
 
   // Download selected book's PDF file from Firebase storage.
   Future<File> downloadPDF() async {
-    _setLoadingState(true);
     String dir = (await getApplicationDocumentsDirectory()).path;
     // Create PDF file inside /directory/bookId.pdf.
     File file = new File('$dir/$selectedBookId.pdf');
@@ -247,7 +274,6 @@ class FirebaseModel extends ChangeNotifier {
 
     /// Write [bytes] to the file.
     await file.writeAsBytes(bytes);
-    _setLoadingState(false);
     return file;
   }
 }

@@ -29,16 +29,10 @@ class BooksListPage extends StatelessWidget {
   /* Building books list using Streams from Firebase Provider */
   Widget _buildStreamBuilder(context) {
     FirebaseModel model = Provider.of<FirebaseModel>(context);
-    return StreamBuilder(
-      stream:
-          model.getBooks(mode), // Retrieving books depending on the given mode.
-      builder: (context, AsyncSnapshot<QuerySnapshot> snap) {
-        // Check if still loading.
-        if (!snap.hasData) return _buildLoadingStat(context);
-        // Stream loaded, build the list.
-        return _buildBooksList(snap.data.documents);
-      },
-    );
+    Map<String, Book> books = model.getBooksByMode(mode);
+    return model.isLoading
+        ? _buildLoadingStat(context)
+        : _buildBooksList(books);
   }
 
   // Loading Circular indicator.
@@ -51,18 +45,10 @@ class BooksListPage extends StatelessWidget {
   }
 
   // Build books list using a column.
-  Widget _buildBooksList(List<DocumentSnapshot> data) {
-    Map<int, dynamic> dataMap = data.asMap();
+  Widget _buildBooksList(Map<String, Book> data) {
     return Column(
-        children: dataMap
-            .map(
-              (idx, element) {
-                return MapEntry(
-                  idx,
-                  _buildBookCard(data[idx].documentID),
-                );
-              },
-            )
+        children: data
+            .map((key, value) => MapEntry(key, _buildBookCard(key)))
             .values
             .toList());
   }

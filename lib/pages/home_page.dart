@@ -1,12 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:notebook_provider/constant_values.dart';
 import 'package:notebook_provider/models/enums.dart';
+import 'package:notebook_provider/providers/firebase_provider.dart';
 import 'package:notebook_provider/widgets/center_title.dart';
 import 'package:notebook_provider/widgets/horizontal_list_preview.dart';
 import 'package:notebook_provider/widgets/quote_widget.dart';
 import 'package:notebook_provider/widgets/slider.dart';
+import 'package:provider/provider.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
+  @override
+  State<StatefulWidget> createState() {
+    return _HomePageState();
+  }
+}
+
+class _HomePageState extends State<HomePage> {
+  @override
+  void initState() {
+    FirebaseModel model = Provider.of<FirebaseModel>(context, listen: false);
+    if (!model.downloadedOnce)
+      model.getBooks();
+    super.initState();
+  }
+
   // List of widgets inside the home page
   final List<Widget> _children = [
     // Page's title

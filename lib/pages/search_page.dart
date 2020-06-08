@@ -4,6 +4,7 @@ import 'package:animate_do/animate_do.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:notebook_provider/constant_values.dart';
+import 'package:notebook_provider/models/book.dart';
 import 'package:notebook_provider/models/enums.dart';
 import 'package:notebook_provider/providers/firebase_provider.dart';
 import 'package:notebook_provider/widgets/book/book_item.dart';
@@ -50,44 +51,24 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   //
-  StreamBuilder<QuerySnapshot> _buildBooksStream(BuildContext context) {
-    FirebaseModel firebaseModel =
-        Provider.of<FirebaseModel>(context, listen: false);
-    return StreamBuilder(
-      stream: firebaseModel.getBooks(ListMode.All),
-      builder: (context, AsyncSnapshot<QuerySnapshot> snap) {
-        // Still loading data.
-        // if (snap.connectionState == ConnectionState.waiting)
-        //   return _buildWaitingState(context);
-        // No books found.
-        if (!snap.hasData) return _buildNoBooksFound();
-        // Data loaded, View it.
-        List<DocumentSnapshot> data = snap.data.documents;
-        // Save downloaded list locally (Caching)
-        firebaseModel.addBooks(data);
-        List<DocumentSnapshot> matchData = data
-            .where(
-              (element) =>
-                  element.data[Values.BOOK_TITLE].toString().contains(_content),
-            )
-            .toList();
-
-        // No matched content
-        if (matchData.length == 0) return _buildNoBooksFound();
-
-        return _buildBooksList(matchData);
-      },
-    );
+  Widget _buildBooksStream(BuildContext context) {
+    FirebaseModel model = Provider.of<FirebaseModel>(context, listen: false);
+    Map<String, Book> books = model.getMatchedBooks(_content);
+    return model.isLoading ? Container() : _buildBooksList(books);
   }
 
   // Builds matched books.
-  Expanded _buildBooksList(List<DocumentSnapshot> matchData) {
+  Expanded _buildBooksList(Map<String, Book> matchData) {
+    var dataList = matchData
+        .map((key, value) => MapEntry(key, BookItem(key)))
+        .values
+        .toList();
     return Expanded(
       child: ListView.builder(
         itemBuilder: (_, int idx) {
           return ZoomIn(
             duration: Duration(milliseconds: 600),
-            child: BookItem(matchData[idx].documentID),
+            child: dataList[idx],
           );
         },
         itemCount: matchData.length,

@@ -97,7 +97,7 @@ class PersonalBookItem extends StatelessWidget {
 
   Positioned _buildBookImage(String image) {
     return Positioned(
-      child: Image.asset(
+      child: Image.network(
         image,
         height: 90,
         width: 70,

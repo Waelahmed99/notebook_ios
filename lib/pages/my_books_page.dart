@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:notebook_provider/constant_values.dart';
+import 'package:notebook_provider/models/book.dart';
 import 'package:notebook_provider/providers/firebase_provider.dart';
 import 'package:notebook_provider/widgets/book/personal_book_item.dart';
 import 'package:notebook_provider/widgets/center_title.dart';
@@ -36,31 +37,28 @@ class MyBooksPage extends StatelessWidget {
 
   // Stream the personal books from firebase Provider.
   Widget _buildMyBooksList(BuildContext context) {
-    return StreamBuilder(
-      stream: Provider.of<FirebaseModel>(context).getPersonalBooks(),
-      builder: (context, AsyncSnapshot<QuerySnapshot> snap) {
-        // Data is loading
-        if (snap.connectionState == ConnectionState.waiting)
-          return _buildLoadingProgress(context);
-        // No data to be shown.
-        if (!snap.hasData) return _buildNoBooksWidget();
-        // Data is loaded, view it.
-        return _buildBooksList(snap.data.documents, context);
-      },
-    );
+    FirebaseModel model = Provider.of<FirebaseModel>(context, listen: false);
+
+    return model.isLoading
+        ? _buildLoadingProgress(context)
+        : _buildBooksList(model.getPersonalBooks(), context);
   }
 
   // No bought books, notify the user.
   Widget _buildNoBooksWidget() => Center(child: Text(Values.NO_BOUGHT_BOOKS));
 
   // Build the scrollable list of books after loading it.
-  Expanded _buildBooksList(List<DocumentSnapshot> data, context) {
+  Expanded _buildBooksList(Map<String, Book> data, context) {
     //todo: Need configurations.
-    Provider.of<FirebaseModel>(context, listen: false).addBooks(data);
+    var dataList = data
+        .map((key, value) => MapEntry(key, PersonalBookItem(key)))
+        .values
+        .toList();
     return Expanded(
       child: ListView.builder(
-        itemBuilder: (context, int idx) =>
-            PersonalBookItem(data[idx].documentID),
+        itemBuilder: (context, int idx) {
+          return dataList[idx];
+        },
         itemCount: data.length,
       ),
     );

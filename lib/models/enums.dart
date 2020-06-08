@@ -13,4 +13,5 @@ enum ListMode {
   MostSelling,
   MoreLike,
   All,
+  Liked,
 }

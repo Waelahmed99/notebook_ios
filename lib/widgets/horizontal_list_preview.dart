@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:animate_do/animate_do.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -5,7 +7,6 @@ import 'package:notebook_provider/models/book.dart';
 import 'package:notebook_provider/models/enums.dart';
 import 'package:notebook_provider/pages/books_list.dart';
 import 'package:notebook_provider/providers/firebase_provider.dart';
-import 'package:notebook_provider/providers/user_provider.dart';
 import 'package:provider/provider.dart';
 
 import 'book/book_card.dart';
@@ -91,21 +92,10 @@ class HorizontalPreview extends StatelessWidget {
   Widget _buildItemsList(context) {
     return Consumer<FirebaseModel>(
       builder: (_, FirebaseModel model, child) {
-        return StreamBuilder(
-          stream: model.getBooks(mode, type: type),
-          builder: (_, AsyncSnapshot<QuerySnapshot> snap) {
-            // Still fetching data.
-            if (snap.connectionState == ConnectionState.waiting)
-              return _buildCircularIndicator(context);
-            // No data fetched
-            if (!snap.hasData) return Container();
-            // Data fetched, view it.
-            List<DocumentSnapshot> data = snap.data.documents;
-            // Add data to our Firebase Provider (Caching).
-            Provider.of<FirebaseModel>(context, listen: false).addBooks(data);
-            return _buildBooksList(data, context);
-          },
-        );
+        Map<String, Book> books = model.getBooksByMode(mode);
+        return model.isLoading
+            ? _buildCircularIndicator(context)
+            : _buildBooksList(books, context);
       },
     );
   }
@@ -120,20 +110,23 @@ class HorizontalPreview extends StatelessWidget {
   }
 
   // Show Books' list.
-  Widget _buildBooksList(List<DocumentSnapshot> data, context) {
-    return ElasticIn(
-      duration: Duration(milliseconds: 1500),
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        reverse: true,
-        itemBuilder: (context, idx) {
-          return Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: BookCard(data[idx].documentID),
-          );
-        },
-        itemCount: data.length,
-      ),
+  Widget _buildBooksList(Map<String, Book> data, context) {
+    var dataList = data
+        .map((key, value) => MapEntry(
+            key,
+            Padding(
+              padding: const EdgeInsets.all(5.0),
+              child: BookCard(key),
+            )))
+        .values
+        .toList();
+    return ListView.builder(
+      scrollDirection: Axis.horizontal,
+      reverse: true,
+      itemBuilder: (context, int idx) {
+        return dataList[idx];
+      },
+      itemCount: min(data.length, 6),
     );
   }
 }

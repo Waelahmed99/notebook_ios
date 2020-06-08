@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:notebook_provider/constant_values.dart';
 import 'package:notebook_provider/pages/home_page.dart';
+import 'package:notebook_provider/pages/more_page.dart';
 import 'package:notebook_provider/pages/my_books_page.dart';
 import 'package:notebook_provider/pages/search_page.dart';
 import 'package:notebook_provider/widgets/rtl_bottom_bar.dart';
@@ -19,7 +20,7 @@ class _MainPageState extends State<MainPage> {
       HomePage(),
       SearchPage(),
       MyBooksPage(),
-      Container(color: Colors.green),
+      MorePage(),
     ];
     return PageView(
       controller: _controller,
