@@ -20,11 +20,12 @@ class UserModel extends ChangeNotifier {
   Future<String> authenticate(String email, String password,
       Authentication mode, BuildContext context) async {
     AuthResult result;
+    print("$email   +    $password");
     _loadingState(true);
     if (mode == Authentication.Login) {
       try {
         result = await _firebaseAuth.signInWithEmailAndPassword(
-            email: email, password: password);
+            email: email.trim(), password: password);
       } catch (e) {
         _loadingState(false);
         return _parseError(e.code);
@@ -32,9 +33,10 @@ class UserModel extends ChangeNotifier {
     } else {
       try {
         result = await _firebaseAuth.createUserWithEmailAndPassword(
-            email: email, password: password);
+            email: email.trim(), password: password);
       } catch (e) {
         _loadingState(false);
+        print(e.code);
         return _parseError(e.code);
       }
     }
@@ -68,6 +70,7 @@ class UserModel extends ChangeNotifier {
   // Check if the user is already signed in.
   Future<bool> isAuthenticated() async {
     SharedPreferences pref = await SharedPreferences.getInstance();
+
     String userId = pref.getString(Values.USER_ID);
     String userEmail = pref.getString(Values.USER_EMAIL);
     // Save user locally if already signed in.
